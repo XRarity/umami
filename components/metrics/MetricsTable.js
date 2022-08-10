@@ -9,10 +9,9 @@ import Arrow from 'assets/arrow-right.svg';
 import { percentFilter } from 'lib/filters';
 import useDateRange from 'hooks/useDateRange';
 import usePageQuery from 'hooks/usePageQuery';
-import useShareToken from 'hooks/useShareToken';
 import ErrorMessage from 'components/common/ErrorMessage';
 import DataTable from './DataTable';
-import { DEFAULT_ANIMATION_DURATION, TOKEN_HEADER } from 'lib/constants';
+import { DEFAULT_ANIMATION_DURATION } from 'lib/constants';
 import styles from './MetricsTable.module.css';
 
 export default function MetricsTable({
@@ -23,9 +22,9 @@ export default function MetricsTable({
   filterOptions,
   limit,
   onDataLoad,
+  delay = null,
   ...props
 }) {
-  const shareToken = useShareToken();
   const [{ startDate, endDate, modified }] = useDateRange(websiteId);
   const {
     resolve,
@@ -48,17 +47,19 @@ export default function MetricsTable({
         country,
       },
       onDataLoad,
-      delay: DEFAULT_ANIMATION_DURATION,
-      headers: { [TOKEN_HEADER]: shareToken?.token },
+      delay: delay || DEFAULT_ANIMATION_DURATION,
     },
-    [modified, url, referrer, os, browser, device, country],
+    [type, modified, url, referrer, os, browser, device, country],
   );
 
   const filteredData = useMemo(() => {
     if (data) {
-      const items = percentFilter(dataFilter ? dataFilter(data, filterOptions) : data);
+      let items = percentFilter(dataFilter ? dataFilter(data, filterOptions) : data);
       if (limit) {
-        return items.filter((e, i) => i < limit).sort(firstBy('y', -1).thenBy('x'));
+        items = items.filter((e, i) => i < limit);
+      }
+      if (filterOptions?.sort === false) {
+        return items;
       }
       return items.sort(firstBy('y', -1).thenBy('x'));
     }
